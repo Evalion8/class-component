@@ -16,12 +16,6 @@ export const Search = ({ defaultValue = '', onSearch }: SearchProps) => {
     onSearch(searchTerm);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
-
   return (
     <div className="p-4 bg-gray-100 flex gap-2">
       <input
@@ -30,7 +24,6 @@ export const Search = ({ defaultValue = '', onSearch }: SearchProps) => {
         value={searchTerm}
         placeholder="Search Pokemon..."
         onChange={(e) => setSearchTerm(e.target.value)}
-        onKeyPress={handleKeyPress}
       />
       <button
         className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"

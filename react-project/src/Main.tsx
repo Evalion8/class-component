@@ -57,6 +57,7 @@ export const Main: React.FC = () => {
   return (
     <main>
       <Search defaultValue={searchTerm} onSearch={handleSearch} />
+
       {loading ? (
         <Spinner />
       ) : error ? (
