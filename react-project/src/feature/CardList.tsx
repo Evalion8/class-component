@@ -1,7 +1,17 @@
 import React from 'react';
 import { Card } from './Card';
 
-export const CardList = ({ items = [] }) => {
+interface Item {
+  name: string;
+  url: string;
+  id?: string;
+}
+
+interface CardListProps {
+  items?: Item[];
+}
+
+export const CardList = ({ items = [] }: CardListProps) => {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4">
       {items.map((item) => (
