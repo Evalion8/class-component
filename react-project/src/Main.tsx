@@ -1,119 +1,94 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { CardList } from './feature/CardList';
 import { Spinner } from './feature/Spinner';
 import { Search } from './feature/Search';
 
-interface State {
-  data: { name: string; url: string }[];
-  loading: boolean;
-  error: string | null;
-  searchTerm: string;
-  page: number;
-}
+const limit = 10;
 
-export class Main extends React.Component<object, State> {
-  limit = 10;
+export const Main: React.FC = () => {
+  const savedSearchTerm = localStorage.getItem('searchTerm') || '';
+  const [data, setData] = useState<{ name: string; url: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState(savedSearchTerm);
+  const [page, setPage] = useState(0);
 
-  constructor(props: object) {
-    super(props);
-    const saved = localStorage.getItem('searchTerm') || '';
-    this.state = {
-      data: [],
-      loading: false,
-      error: null,
-      searchTerm: saved,
-      page: 0,
-    };
-  }
+  useEffect(() => {
+    const fetchData = async () => {
+      const offset = page * limit;
+      let url = `https://pokeapi.co/api/v2/pokemon?limit=${limit}&offset=${offset}`;
 
-  componentDidMount() {
-    this.fetchData();
-  }
+      if (searchTerm) {
+        url = `https://pokeapi.co/api/v2/pokemon/${searchTerm.toLowerCase()}`;
+      }
 
-  componentDidUpdate(_: object, prevState: State) {
-    if (
-      prevState.searchTerm !== this.state.searchTerm ||
-      prevState.page !== this.state.page
-    ) {
-      this.fetchData();
-    }
-  }
+      setLoading(true);
+      setError(null);
 
-  fetchData = () => {
-    const { searchTerm, page } = this.state;
-    const offset = page * this.limit;
-    let url = `https://pokeapi.co/api/v2/pokemon?limit=${this.limit}&offset=${offset}`;
-
-    if (searchTerm) {
-      url = `https://pokeapi.co/api/v2/pokemon/${searchTerm.toLowerCase()}`;
-    }
-
-    this.setState({ loading: true, error: null });
-
-    fetch(url)
-      .then((res) => {
+      try {
+        const res = await fetch(url);
         if (!res.ok) throw new Error(`Error ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
+        const result = await res.json();
+
         if (searchTerm) {
-          this.setState({
-            data: [{ name: data.name, url: data.url }],
-            loading: false,
-          });
+          setData([{ name: result.name, url: result.url }]);
         } else {
-          this.setState({ data: data.results, loading: false });
+          setData(result.results);
         }
-      })
-      .catch((err) => {
-        this.setState({ error: err.message, loading: false, data: [] });
-      });
-  };
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('Unknown error');
+        }
+        setData([]);
+      }
+    };
 
-  handleSearch = (term: string) => {
+    fetchData();
+  }, [searchTerm, page]);
+
+  const handleSearch = (term: string) => {
     localStorage.setItem('searchTerm', term);
-    this.setState({ searchTerm: term, page: 0 });
+    setSearchTerm(term);
+    setPage(0);
   };
 
-  render() {
-    const { data, loading, error, searchTerm } = this.state;
-
-    return (
-      <main>
-        <Search defaultValue={searchTerm} onSearch={this.handleSearch} />
-        {loading ? (
-          <Spinner />
-        ) : error ? (
-          <p className="text-red-600 text-center mt-4">{error}</p>
-        ) : (
-          <CardList items={data} />
-        )}
-        {!searchTerm && (
-          <div className="p-4 flex justify-center gap-4">
-            <button
-              className="px-4 py-2 bg-blue-500 text-white"
-              onClick={() => this.setState((s) => ({ page: s.page - 1 }))}
-              disabled={this.state.page === 0}
-            >
-              Prev
-            </button>
-            <button
-              className="px-4 py-2 bg-blue-500 text-white"
-              onClick={() => this.setState((s) => ({ page: s.page + 1 }))}
-            >
-              Next
-            </button>
-            <button
-              className="bg-red-500 text-white px-4 py-2 mt-4"
-              onClick={() => {
-                throw new Error('Test error from button');
-              }}
-            >
-              Throw Error
-            </button>
-          </div>
-        )}
-      </main>
-    );
-  }
-}
+  return (
+    <main>
+      <Search defaultValue={searchTerm} onSearch={handleSearch} />
+      {loading ? (
+        <Spinner />
+      ) : error ? (
+        <p className="text-red-600 text-center mt-4">{error}</p>
+      ) : (
+        <CardList items={data} />
+      )}
+      {!searchTerm && (
+        <div className="p-4 flex justify-center gap-4">
+          <button
+            className="px-4 py-2 bg-blue-500 text-white"
+            onClick={() => setPage((p) => Math.max(p - 1, 0))}
+            disabled={page === 0}
+          >
+            Prev
+          </button>
+          <button
+            className="px-4 py-2 bg-blue-500 text-white"
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Next
+          </button>
+          <button
+            className="bg-red-500 text-white px-4 py-2 mt-4"
+            onClick={() => {
+              throw new Error('Test error from button');
+            }}
+          >
+            Throw Error
+          </button>
+        </div>
+      )}
+    </main>
+  );
+};
